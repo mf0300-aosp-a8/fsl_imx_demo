@@ -40,6 +40,7 @@ public class OtaAppActivity extends Activity implements OTAServerManager.OTAStat
 	private final int WIFI_NOT_AVALIBLE = 4;
 	private final int CANNOT_FIND_SERVER = 5;
 	private final int WRITE_FILE_ERROR = 6;
+	private final int NETWORK_ERROR = 7;
 	private final int SERIAL_NO_ERROR = 8;
 	Button mUpgradeButton;
 	TextView mMessageTextView;
@@ -84,6 +85,9 @@ public class OtaAppActivity extends Activity implements OTAServerManager.OTAStat
 			break;
                 case WRITE_FILE_ERROR:
                 	mMessageTextView.setText(getText(R.string.error_write_file));
+			break;
+                case NETWORK_ERROR:
+			mMessageTextView.setText(getText(R.string.error_network));
 			break;
                 case SERIAL_NO_ERROR:
 			mMessageTextView.setText(getText(R.string.error_serial_no));
@@ -280,6 +284,14 @@ public class OtaAppActivity extends Activity implements OTAServerManager.OTAStat
 					mMessageTextView.setText(getText(R.string.error_server_no_package));
 				}
 			});
+		} else if (error == ERROR_NETWORK_ERROR) {
+			mMessageTextView.post(new Runnable() {
+				public void run() {
+					mMessageTextView.setText(getText(R.string.error_network));
+					mUpgradeButton.setVisibility(View.VISIBLE);
+				}
+			});
+			onStateChangeUI(STATE_IN_CHECKED);
 		} else if (error == ERROR_WRITE_FILE_ERROR) {
 			mMessageTextView.post(new Runnable() {
 				
@@ -358,6 +370,8 @@ public class OtaAppActivity extends Activity implements OTAServerManager.OTAStat
 			mHandler.sendEmptyMessageDelayed(WRITE_FILE_ERROR,0);
 		} else if (error == ERROR_SERIAL_NOT_AVALIBLE ) {
 			mHandler.sendEmptyMessageDelayed(SERIAL_NO_ERROR,0);
+		} else if (error == ERROR_NETWORK_ERROR ) {
+			mHandler.sendEmptyMessageDelayed(NETWORK_ERROR,0);
 		}
 	}
 	

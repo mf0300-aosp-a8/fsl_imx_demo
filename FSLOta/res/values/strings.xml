@@ -21,6 +21,7 @@
         <string name="ota_server_port">8080</string>
         <string name="ota_server_url">/api/v1/rom</string>
         <string name="error_serial_no">Error: invalid serial number</string>
+        <string name="error_network">Error: network connection error</string>
         <string name="build_id">Build ID</string>
         <string name="build_date">Build date</string>
         <string name="build_desc">Build description</string>
