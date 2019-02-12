@@ -23,11 +23,13 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.os.SystemProperties;
 import com.fsl.android.ota.R;
 import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.*;
+import android.view.Window;
 
 // Controller of OTA Activity
 public class OtaAppActivity extends Activity implements OTAServerManager.OTAStateChangeListener {
@@ -98,7 +100,18 @@ public class OtaAppActivity extends Activity implements OTAServerManager.OTAStat
         super.onCreate(savedInstanceState);
         
         Log.d(TAG, "OTAAppActivity : onCreate");
+        try {
+            requestWindowFeature(Window.FEATURE_LEFT_ICON);
+        } catch(Throwable t) {
+            t.printStackTrace();
+        }
         setContentView(R.layout.main);
+        try {
+
+            setFeatureDrawableResource(Window.FEATURE_LEFT_ICON, R.drawable.ic_launcher);
+        } catch(Throwable t) {
+            t.printStackTrace();
+        }
         (mUpgradeButton = (Button) findViewById(R.id.upgrade_button)) 
         		.setOnClickListener(mUpgradeListener);
         mMessageTextView = (TextView) findViewById(R.id.message_text_view);
