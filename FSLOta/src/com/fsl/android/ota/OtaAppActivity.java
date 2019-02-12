@@ -38,6 +38,7 @@ public class OtaAppActivity extends Activity implements OTAServerManager.OTAStat
 	private final int WIFI_NOT_AVALIBLE = 4;
 	private final int CANNOT_FIND_SERVER = 5;
 	private final int WRITE_FILE_ERROR = 6;
+	private final int SERIAL_NO_ERROR = 8;
 	Button mUpgradeButton;
 	TextView mMessageTextView;
 	TextView mVersionTextView;
@@ -81,6 +82,9 @@ public class OtaAppActivity extends Activity implements OTAServerManager.OTAStat
 			break;
                 case WRITE_FILE_ERROR:
                 	mMessageTextView.setText(getText(R.string.error_write_file));
+			break;
+                case SERIAL_NO_ERROR:
+			mMessageTextView.setText(getText(R.string.error_serial_no));
 			break;
                 default:
                 break;
@@ -333,6 +337,8 @@ public class OtaAppActivity extends Activity implements OTAServerManager.OTAStat
 			mHandler.sendEmptyMessageDelayed(CANNOT_FIND_SERVER,0);
 		} else if (error == ERROR_WRITE_FILE_ERROR ) {
 			mHandler.sendEmptyMessageDelayed(WRITE_FILE_ERROR,0);
+		} else if (error == ERROR_SERIAL_NOT_AVALIBLE ) {
+			mHandler.sendEmptyMessageDelayed(SERIAL_NO_ERROR,0);
 		}
 	}
 	

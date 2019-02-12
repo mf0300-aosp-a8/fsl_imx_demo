@@ -20,4 +20,5 @@
         <string name="ota_server_ip">lighthouse.net</string>
         <string name="ota_server_port">8080</string>
         <string name="ota_server_url">/api/v1/rom</string>
+        <string name="error_serial_no">Error: invalid serial number</string>
     </resources>
