@@ -33,7 +33,6 @@ public class OTAServerConfig {
 	final String default_serveraddr = "lighthouse-api.harbortouch.com";
 	final String default_protocol = "https";
 	final int default_port = 443;
-	URL buildpropURL;
 	String product;
 	final String TAG = "OTA";
 	final String configFile = "/system/etc/ota.conf";
@@ -115,7 +114,6 @@ public class OTAServerConfig {
 			} else if (machineString.indexOf("i.MX7D") != -1) {
 			      fileaddr = fileaddr + ".imx7d";
 			}
-			buildpropURL = new URL(default_protocol, server, port, buildconfigAddr);
 			updateRequestURL = new URL(default_protocol, mServerDomain, mServerPort, mContext.getString(R.string.ota_server_url));
 		} catch (Exception e) {
 			Log.e(TAG, "wrong format/error of OTA configure file.");
@@ -129,9 +127,6 @@ public class OTAServerConfig {
 	void defaultConfigure(String productname) throws MalformedURLException
 	{
 		product = productname;
-		String buildconfigAddr = new String(product + "/" + "build.prop"); 
-		buildpropURL = new URL(default_protocol, default_serveraddr, default_port, buildconfigAddr);
-		Log.d(TAG, "build.prop URL:" + buildpropURL.toString());
 
 		String packageUpdateAddr = new String(product + "/api/v1/rom");
 		if (mServerDomain != null && mServerPort != 0) {
@@ -142,6 +137,5 @@ public class OTAServerConfig {
 	}
 	
 	public URL getUpdateRequestURL() { return updateRequestURL; }
-	public URL getBuildPropURL() { return buildpropURL; }
 	
 }
