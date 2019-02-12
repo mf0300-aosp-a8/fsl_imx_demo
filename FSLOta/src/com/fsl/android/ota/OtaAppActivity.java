@@ -212,7 +212,7 @@ public class OtaAppActivity extends Activity implements OTAServerManager.OTAStat
 	
 	void onStateUpgrade(int error, Object info) {
 		
-		if (error == ERROR_PACKAGE_VERIFY_FAILED) {
+		if (error == ERROR_PACKAGE_VERIFY_FAILED || error == ERROR_PACKAGE_SIGN_FAILED) {
 			Log.v(TAG, "package verify failed, signaure not match");
 			mMessageTextView.post(new Runnable() {
 				public void run() {
