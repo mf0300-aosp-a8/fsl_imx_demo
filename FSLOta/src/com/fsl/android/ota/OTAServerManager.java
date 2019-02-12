@@ -19,17 +19,32 @@ package com.fsl.android.ota;
 import java.net.*;
 import java.security.GeneralSecurityException;
 import java.io.*;
+import java.util.concurrent.Semaphore;
 
 import android.os.SystemProperties;
 import android.content.*;
+import android.content.res.AssetManager;
 import android.net.ConnectivityManager;
+import android.net.LocalSocket;
+import android.net.LocalSocketAddress;
+import android.os.AsyncTask;
 import android.os.Build;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
 import android.os.PowerManager;
 import android.os.PowerManager.WakeLock;
 import android.os.RecoverySystem;
 import android.util.Log;
+import android.widget.TextView;
+
+import com.fsl.android.ota.http.Api;
+import com.fsl.android.ota.http.AuthenticationParameters;
+import com.fsl.android.ota.util.IOUtil;
+
+import org.json.JSONObject;
+
+import javax.net.ssl.HttpsURLConnection;
 
 public class OTAServerManager  {
 	public interface OTAStateChangeListener {
@@ -48,12 +63,13 @@ public class OTAServerManager  {
 		final int NO_ERROR = 0;
 		final int ERROR_WIFI_NOT_AVALIBLE = 1;  // require wifi network, for OTA app.
 		final int ERROR_CANNOT_FIND_SERVER = 2;
-		final int ERROR_PACKAGE_VERIFY_FALIED = 3;
+		final int ERROR_PACKAGE_VERIFY_FAILED = 3;
 		final int ERROR_WRITE_FILE_ERROR = 4;
 		final int ERROR_NETWORK_ERROR = 5;
 		final int ERROR_PACKAGE_INSTALL_FAILED = 6;
-		final int ERROR_PACKAGE_VERIFY_FAILED = 7;
-		
+		final int ERROR_PACKAGE_SIGN_FAILED = 7;
+		final int ERROR_SERIAL_NOT_AVALIBLE = 8;
+
 		// results
 		final int RESULTS_ALREADY_LATEST = 1;
 
@@ -64,6 +80,24 @@ public class OTAServerManager  {
 	private OTAStateChangeListener mListener;	
 	private OTAServerConfig mConfig;
 	private BuildPropParser parser = null;
+
+	private Api HTTPSApi;
+	private String mServerResponse;
+
+	private String mUpdateURL;
+	private String mBuildNumber;
+	private String mBuildId;
+	private String mBuildDate;
+	private String mBuildDescription;
+	private String mBuildSize;
+
+	private String clientCertificatePassword;
+	private String clientCertificateName;
+	private String caCertificateName;
+	private String mDeviceSerialNumber = null;
+	private boolean localtest = false;
+	private final Semaphore sema_sync = new Semaphore(0, true);
+
 	long mCacheProgress = -1;
 	boolean mStop = false;
 	Context mContext;
@@ -73,14 +107,103 @@ public class OTAServerManager  {
 	WakeLock mWakelock;
 	
 	public OTAServerManager(Context context) throws MalformedURLException {
-		mConfig = new OTAServerConfig(Build.PRODUCT);
+		mConfig = new OTAServerConfig(Build.PRODUCT, context);
 		PowerManager pm = (PowerManager)context.getSystemService(Context.POWER_SERVICE);
 		mWakelock = pm.newWakeLock(PowerManager.SCREEN_BRIGHT_WAKE_LOCK, "OTA Wakelock");
 		mContext = context;
+
+		clientCertificateName = "client.p12";
+		caCertificateName = "root-ca.crt.pem";
+		clientCertificatePassword = "1234";
+
+		Log.i(TAG, "Getting Device HW:SerialNo");
+		TcpClientThread tcpClientThread = new TcpClientThread();
+		tcpClientThread.start();
+
+		try {
+			sema_sync.acquire();
+		} catch(Exception e) {
+			Log.e(TAG, "*** Unable Get Device HW:SerialNo");
+			e.printStackTrace();
+		}
+
+		Log.d(TAG, "*** OTAServerManager DEVICE: " + Build.PRODUCT + " SerialNo: " + mDeviceSerialNumber);
+
 	}
 
 	public OTAStateChangeListener getmListener() {
 		return mListener;
+	}
+
+	public String getServerResponse() {
+		return mServerResponse;
+	}
+
+	class TcpClientThread extends Thread {
+		TcpClientThread() {}
+
+		public void run() {
+			try {
+				String sernum="cmd::get::";
+
+				LocalSocket socket;
+				LocalSocketAddress localsocketaddr;
+				InputStream is;
+				OutputStream os;
+				DataInputStream dis;
+				PrintStream ps;
+				BufferedReader br;
+				Log.i(TAG, "*** HWSER LocalSocket");
+				socket = new LocalSocket();
+				localsocketaddr = new LocalSocketAddress("serialnumber",LocalSocketAddress.Namespace.RESERVED);
+				socket.connect(localsocketaddr);
+				is = socket.getInputStream();
+				os = socket.getOutputStream();
+				dis = new DataInputStream(is);
+				ps = new PrintStream(os);
+
+				Log.i(TAG, "*** HWSER getBytes");
+
+				byte[] msg1 = sernum.getBytes();
+				ps.write(msg1);
+				InputStream in = socket.getInputStream();
+				br = new BufferedReader(new InputStreamReader(in));
+				if (sernum.endsWith("get::")) {
+					StringBuffer strBuffer = new StringBuffer();
+					char c = (char) br.read();
+					while (c != 0xffff) {
+						strBuffer.append(c);
+						c=(char) br.read();
+					}
+					mDeviceSerialNumber = strBuffer.toString();
+					sema_sync.release();
+				}
+				Log.i(TAG, "*** HWSER getBytes DONE serial:" + mDeviceSerialNumber);
+
+				dis.close();
+				ps.close();
+				is.close();
+				os.close();
+				socket.close();
+			} catch (Exception e) {
+				Log.e(TAG, "*** ENABLE GET HW:SERIAL FROM SOCKET EXCEPTION " + e.getMessage());
+				e.printStackTrace();
+				sema_sync.release();
+			}
+		}
+	}
+
+
+	public String getServerResponse(String key) {
+		try {
+			JSONObject mainObject = new JSONObject(mServerResponse);
+			String item = mainObject.getString(key);
+			Log.d(TAG, "*** getServerResponse key: " + key + " val: " + item);
+			return item;
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return null;
 	}
 
 	public void setmListener(OTAStateChangeListener mListener) {
@@ -98,35 +221,55 @@ public class OTAServerManager  {
 		}
 	}	
 	
+	public String getBuildNumber() {return mBuildNumber;}
+	public String getBuildId() {return mBuildId;}
+	public String getBuildDate() {return mBuildDate;}
+	public String getBuildDescription() {return mBuildDescription;}
+	public String getBuildSize() {return mBuildSize;}
+
 	public void startCheckingVersion() {
 		
 		Log.v(TAG, "startCheckingVersion");
-		if (checkURLOK(mConfig.getUpdateRequestURL()) == false) {
-			if (this.mListener != null) {
-				if (this.checkNetworkOnline()) {
-					reportCheckingError(OTAStateChangeListener.ERROR_CANNOT_FIND_SERVER);
-                                        Log.v(TAG, "error cannot find server!");
-                                } 
-				else {
-					reportCheckingError(OTAStateChangeListener.ERROR_WIFI_NOT_AVALIBLE);
-                                        Log.v(TAG, "error wifi or ethernet not avalible");
-                                }  
+		int res = getUpdateURL(mConfig.getUpdateRequestURL());
+		if (res != 0) {
+			if (res == -1) {
+				reportCheckingError(OTAStateChangeListener.ERROR_CANNOT_FIND_SERVER);
+				Log.v(TAG, "error cannot find server!");
+			} else if (res == -2) {
+				reportCheckingError(OTAStateChangeListener.ERROR_SERIAL_NOT_AVALIBLE);
+				Log.v(TAG, "error serial id not avalible");
+			} else if (res == -3) {
+				if (this.mListener != null) {
+					if (this.checkNetworkOnline()) {
+						reportCheckingError(OTAStateChangeListener.ERROR_CANNOT_FIND_SERVER);
+						Log.v(TAG, "error cannot find server!");
+					} else {
+						reportCheckingError(OTAStateChangeListener.ERROR_WIFI_NOT_AVALIBLE);
+						Log.v(TAG, "error wifi or ethernet not avalible");
+					}
+				}
 			}
-			
 			return;
 		}
-		
-		parser = getTargetPackagePropertyList(mConfig.getUpdateRequestURL());
-		
-		if (parser != null) {
-			if (this.mListener != null)
-				this.mListener.onStateOrProgress(OTAStateChangeListener.STATE_IN_CHECKED, 
-						OTAStateChangeListener.NO_ERROR, parser);
-		} else {
-			reportCheckingError(OTAStateChangeListener.ERROR_WRITE_FILE_ERROR);
+		// get build info from response
+		mUpdateURL = getServerResponse("url");
+		mBuildNumber = getServerResponse("buildNumber");
+		mBuildId = getServerResponse("buildDisplayId");
+		mBuildDate = getServerResponse("buildDate");
+		mBuildDescription = getServerResponse("description");
+		mBuildSize = getServerResponse("size");
+
+		if (this.mListener != null) {
+			this.mListener.onStateOrProgress(OTAStateChangeListener.STATE_IN_CHECKED, OTAStateChangeListener.NO_ERROR, parser);
 		}
 	}
 	
+	// return true if needs to upgrade
+	public boolean isUpdateURLPresent() {
+		if (mUpdateURL != null) return true;
+		return false;
+	}
+
 	// return true if needs to upgrade
 	public boolean compareLocalVersionToServer() {
 		if (parser == null) {
@@ -199,11 +342,16 @@ public class OTAServerManager  {
 	public void startDownloadUpgradePackage() {
 		
 		Log.v(TAG, "startDownloadUpgradePackage()");
+		long total = 0, count;
 
-		if (checkURLOK(mConfig.getUpdateRequestURL()) == false) {
-			if (this.mListener != null)
-				reportDownloadError(OTAStateChangeListener.ERROR_CANNOT_FIND_SERVER);
-			return;
+		if (localtest) {
+			try {
+				File odir = mContext.getCacheDir();
+				File ofil = File.createTempFile("temp", "zip", odir);
+				mUpdatePackageLocation = ofil.getPath();
+			}catch(Exception e) {
+				e.printStackTrace();
+			}
 		}
 
 
@@ -218,36 +366,53 @@ public class OTAServerManager  {
 
 		try {
 			mWakelock.acquire();
-			
-			URL url = mConfig.getUpdateRequestURL();
-			Log.d(TAG, "start downoading package:" + url.toString());
-			URLConnection conexion = url.openConnection();
-			conexion.setReadTimeout(10000);
-			// this will be useful so that you can show a topical 0-100% progress bar
+			if (mUpdateURL != null) {
+				AuthenticationParameters authParams = new AuthenticationParameters();
+				authParams.setClientCertificateAssertName(clientCertificateName);
+				authParams.setClientCertificatePassword(clientCertificatePassword);
+				authParams.setCaCertificate(readCaCert());
 
-			int lengthOfFile = 96038693;
-			lengthOfFile = conexion.getContentLength();			
-			// download the file
-			InputStream input = new BufferedInputStream(url.openStream());
-			OutputStream output = new FileOutputStream(targetFile);
-			
-			Log.d(TAG, "file size:" + lengthOfFile);
-			byte data[] = new byte[100 * 1024];
-			long total = 0, count;
-			while ((count = input.read(data)) >= 0 && !mStop) {
-				total += count;
-				
-				// publishing the progress....
-				publishDownloadProgress(lengthOfFile, total);
-				output.write(data, 0, (int)count);
+				HTTPSApi = new Api(mContext, authParams);
+				Log.d(TAG, "Connecting to " + mUpdateURL);
+
+				//HTTPSApi.setAccessKey("12345678");
+				//HTTPSApi.setSecretKey("LIGHTHOUSE_SECRET_KEY");
+				HTTPSApi.setHardwareId(mDeviceSerialNumber);
+
+				InputStream is = HTTPSApi.doGetStream(mUpdateURL);
+				int lengthOfFile = 96038693;
+				lengthOfFile = HTTPSApi.doGetSize();
+				// download the file
+				InputStream input = new BufferedInputStream(is);
+				OutputStream output = new FileOutputStream(targetFile);
+
+				Log.d(TAG, "file size:" + lengthOfFile);
+				byte data[] = new byte[100 * 1024];
+				while ((count = input.read(data)) >= 0 && !mStop) {
+					total += count;
+
+					// publishing the progress....
+					publishDownloadProgress(lengthOfFile, total);
+					output.write(data, 0, (int) count);
+					Log.d(TAG, "readed:" + total);
+				}
+
+				output.flush();
+				output.close();
+				input.close();
+				if (this.mListener != null && !mStop) {
+					this.mListener.onStateOrProgress(OTAStateChangeListener.STATE_IN_DOWNLOADING, 0, null);
+				}
 			}
-			
-			output.flush();
-			output.close();
-			input.close();
-			if (this.mListener != null && !mStop)
-				this.mListener.onStateOrProgress(OTAStateChangeListener.STATE_IN_DOWNLOADING, 0, null);
 		} catch (IOException e) {
+			e.printStackTrace();
+			if(e instanceof java.net.ProtocolException ||
+				e instanceof java.net.SocketTimeoutException){
+				reportDownloadError(OTAStateChangeListener.ERROR_NETWORK_ERROR);
+			} else {
+				reportDownloadError(OTAStateChangeListener.ERROR_WRITE_FILE_ERROR);
+			}
+		} catch (Exception e) {
 			e.printStackTrace();
 			reportDownloadError(OTAStateChangeListener.ERROR_WRITE_FILE_ERROR);
 		} finally {
@@ -273,11 +438,11 @@ public class OTAServerManager  {
         	 mWakelock.acquire();
         	 RecoverySystem.verifyPackage(recoveryFile, recoveryVerifyListener, null);
          } catch (IOException e1) {
-        	 reportInstallError(OTAStateChangeListener.ERROR_PACKAGE_VERIFY_FALIED);
+        	 reportInstallError(OTAStateChangeListener.ERROR_PACKAGE_VERIFY_FAILED);
         	 e1.printStackTrace();
         	 return;
          } catch (GeneralSecurityException e1) {
-        	 reportInstallError(OTAStateChangeListener.ERROR_PACKAGE_VERIFY_FALIED);
+        	 reportInstallError(OTAStateChangeListener.ERROR_PACKAGE_VERIFY_FAILED);
         	 e1.printStackTrace();
         	 return;
          } finally {
@@ -365,4 +530,61 @@ public class OTAServerManager  {
 		return false;
 	}
 
+	private byte[] readP12Cert() throws Exception {
+		/*File externalStorageDir = Environment.getExternalStorageDirectory();
+		return new File(externalStorageDir, clientCertificateName);
+		*/
+		AssetManager assetManager = mContext.getAssets();
+		InputStream inputStream = assetManager.open(caCertificateName);
+		return IOUtil.readFullyByte(inputStream);
+	}
+
+	private String readCaCert() throws Exception {
+		/*
+		AssetManager assetManager = getAssets();
+		InputStream inputStream = assetManager.open(caCertificateName);
+		return IOUtil.readFully(inputStream);
+		*/
+		AssetManager assetManager = mContext.getAssets();
+		InputStream inputStream = assetManager.open(caCertificateName);
+		return IOUtil.readFully(inputStream);
+	}
+
+
+	int getUpdateURL(URL url) {
+		try {
+			AuthenticationParameters authParams = new AuthenticationParameters();
+			authParams.setClientCertificateAssertName(clientCertificateName);
+			authParams.setClientCertificatePassword(clientCertificatePassword);
+			authParams.setCaCertificate(readCaCert());
+
+			if (mDeviceSerialNumber != null) {
+				HTTPSApi = new Api(mContext, authParams);
+				Log.d(TAG, "Connecting to " + url.toURI());
+
+				//HTTPSApi.setAccessKey("12345678");
+				//HTTPSApi.setSecretKey("LIGHTHOUSE_SECRET_KEY");
+				HTTPSApi.setHardwareId(mDeviceSerialNumber);
+
+				mServerResponse = HTTPSApi.doGet(url.toString());
+				int responseCode = HTTPSApi.getLastResponseCode();
+				if (responseCode == 200) {
+					Log.d(TAG, "HTTP Response Code: 200 Text: " + mServerResponse);
+					return 0;
+				} else {
+					if (mServerResponse.contains("Connection refused")) {
+						Log.e(TAG, "*** ERROR: Server reset connection");
+					}
+					Log.e(TAG, "*** ERROR: HTTP Response Code: " + responseCode);
+					return -1;
+				}
+			} else {
+				Log.e(TAG, "*** ERROR: HW:SerialId is Absent");
+				return -2;
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return -3;
+	}
 }
