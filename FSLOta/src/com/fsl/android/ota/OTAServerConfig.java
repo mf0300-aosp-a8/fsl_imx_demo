@@ -33,7 +33,6 @@ public class OTAServerConfig {
 	final String default_serveraddr = "lighthouse-api.harbortouch.com";
 	final String default_protocol = "https";
 	final int default_port = 443;
-	URL updatePackageURL;
 	URL buildpropURL;
 	String product;
 	final String TAG = "OTA";
@@ -116,7 +115,6 @@ public class OTAServerConfig {
 			} else if (machineString.indexOf("i.MX7D") != -1) {
 			      fileaddr = fileaddr + ".imx7d";
 			}
-			updatePackageURL = new URL(default_protocol, server, port, fileaddr);
 			buildpropURL = new URL(default_protocol, server, port, buildconfigAddr);
 			updateRequestURL = new URL(default_protocol, mServerDomain, mServerPort, mContext.getString(R.string.ota_server_url));
 		} catch (Exception e) {
@@ -131,11 +129,8 @@ public class OTAServerConfig {
 	void defaultConfigure(String productname) throws MalformedURLException
 	{
 		product = productname;
-		String fileaddr = new String(product + "/" + product + ".ota.zip");
 		String buildconfigAddr = new String(product + "/" + "build.prop"); 
-		updatePackageURL = new URL(default_protocol, default_serveraddr, default_port, fileaddr );
 		buildpropURL = new URL(default_protocol, default_serveraddr, default_port, buildconfigAddr);
-		Log.d(TAG, "create a new server config: package url " + updatePackageURL.toString() + "port:" + updatePackageURL.getPort());
 		Log.d(TAG, "build.prop URL:" + buildpropURL.toString());
 
 		String packageUpdateAddr = new String(product + "/api/v1/rom");
@@ -147,7 +142,6 @@ public class OTAServerConfig {
 	}
 	
 	public URL getUpdateRequestURL() { return updateRequestURL; }
-	public URL getPackageURL () { return updatePackageURL; }
 	public URL getBuildPropURL() { return buildpropURL; }
 	
 }
