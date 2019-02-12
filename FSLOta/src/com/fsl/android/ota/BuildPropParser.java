@@ -70,6 +70,10 @@ public class BuildPropParser {
 
     private void setFile(File file) throws IOException {
         try {
+            propHM.put("server", mContext.getString(R.string.ota_server_ip));
+            propHM.put("port", mContext.getString(R.string.ota_server_port));
+            propHM.put("server_url", mContext.getString(R.string.ota_server_url));
+
             FileReader reader = new FileReader(file);
             BufferedReader in = new BufferedReader(reader);
             String string;

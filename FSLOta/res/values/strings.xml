@@ -17,4 +17,7 @@
         <string name="length_unknown">Unknown</string>
         <string name="verify_package">Verifying package</string>
         <string name="full_version">Description</string>
+        <string name="ota_server_ip">lighthouse.net</string>
+        <string name="ota_server_port">8080</string>
+        <string name="ota_server_url">/api/v1/rom</string>
     </resources>
