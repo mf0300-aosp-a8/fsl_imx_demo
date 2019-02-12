@@ -101,7 +101,7 @@ public class OTAServerManager  {
 	public void startCheckingVersion() {
 		
 		Log.v(TAG, "startCheckingVersion");
-		if (checkURLOK(mConfig.getBuildPropURL()) == false) {
+		if (checkURLOK(mConfig.getUpdateRequestURL()) == false) {
 			if (this.mListener != null) {
 				if (this.checkNetworkOnline()) {
 					reportCheckingError(OTAStateChangeListener.ERROR_CANNOT_FIND_SERVER);
@@ -116,7 +116,7 @@ public class OTAServerManager  {
 			return;
 		}
 		
-		parser = getTargetPackagePropertyList(mConfig.getBuildPropURL());
+		parser = getTargetPackagePropertyList(mConfig.getUpdateRequestURL());
 		
 		if (parser != null) {
 			if (this.mListener != null)
