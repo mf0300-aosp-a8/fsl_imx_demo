@@ -297,9 +297,7 @@ public class OtaAppActivity extends Activity implements OTAServerManager.OTAStat
 		});
 		
 		if (error == 0) {
-			// return no error, usually means have a version info from remote server, release name is in @info
-			// needs check here whether the local version is newer then remote version
-			if (mOTAManager.compareLocalVersionToServer() == false) {
+			if (mOTAManager.isUpdateURLPresent() == false) {
 				// we are already latest...				
 				mMessageTextView.post(new Runnable() {
 					public void run() {
@@ -308,7 +306,7 @@ public class OtaAppActivity extends Activity implements OTAServerManager.OTAStat
 					}
 				});
 				
-			} else if (mOTAManager.compareLocalVersionToServer() == true ) {
+			} else {
 				final BuildPropParser parser = (BuildPropParser) info;
 				final long bytes = mOTAManager.getUpgradePackageSize();
 				mMessageTextView.post(new Runnable() {
