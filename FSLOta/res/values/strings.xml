@@ -12,7 +12,7 @@
         <string name="have_new">Have a new release</string>
         <string name="error_package_install_failed">package install failed</string>
         <string name="error_needs_wifi">Error: needs wifi network.</string>
-        <string name="error_cannot_connect_server">Error: Can not connect to server</string>
+        <string name="error_cannot_connect_server">Error: can not connect to the server</string>
         <string name="size">Size </string>
         <string name="length_unknown">Unknown</string>
         <string name="verify_package">Verifying package</string>
