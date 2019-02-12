@@ -71,49 +71,10 @@ public class OTAServerConfig {
 			if (port_str == null) {
 				port_str = Integer.toString(default_port);
 			}
-			String android_name = parser.getProp(android_nickname);
 			int port = new Long(port_str).intValue();
 			mServerPort = port != 0 ? port : default_port;
-			String fileaddr;
-			String buildconfigAddr;
 
 			readMachine();
-			String version = SystemProperties.get("ro.build.version.release");
-			fileaddr = new String(product + "_" + android_name + "_" + version + "/" + product + ".ota.zip");
-			buildconfigAddr = new String(product + "_" + android_name + "_" + version + "/" + "build.prop");
-                        String boottype = SystemProperties.get("ro.boot.storage_type");
-			if (machineString.indexOf("i.MX6") != -1) {
-			if (machineString.indexOf("DualLite") != -1) {
-                              if (boottype.equals("nand"))
-                                  {fileaddr = fileaddr + ".imx6dl_nand";}
-                              else
-                              fileaddr = fileaddr + ".imx6dl";
-			} else if (machineString.indexOf("Quad") != -1) {
-				if(machineString.indexOf("Plus") != -1){
-                              		if (boottype.equals("nand"))
-                                  		{fileaddr = fileaddr + ".imx6qp_nand";}
-                              		else
-                              	  		fileaddr = fileaddr + ".imx6qp";
-				} else {
-                                	if (boottype.equals("nand"))
-                                  		{fileaddr = fileaddr + ".imx6q_nand";}
-                                	else
-                                  		fileaddr = fileaddr + ".imx6q";
-				}
-			} else if (machineString.indexOf("SoloLite") != -1) {
-				fileaddr = fileaddr + ".imx6sl";
-			} else if (machineString.indexOf("SoloX") != -1) {
-                               if (boottype.equals("nand"))
-                                  {fileaddr = fileaddr + ".imx6sx_nand";
-                        }
-                              else
-			      fileaddr = fileaddr + ".imx6sx";
-			}
-			} else if (machineString.indexOf("i.MX7ULP") != -1) {
-			      fileaddr = fileaddr + ".imx7ulp";
-			} else if (machineString.indexOf("i.MX7D") != -1) {
-			      fileaddr = fileaddr + ".imx7d";
-			}
 			updateRequestURL = new URL(default_protocol, mServerDomain, mServerPort, mContext.getString(R.string.ota_server_url));
 		} catch (Exception e) {
 			Log.e(TAG, "wrong format/error of OTA configure file.");
