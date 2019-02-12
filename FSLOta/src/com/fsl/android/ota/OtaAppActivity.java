@@ -330,16 +330,22 @@ public class OtaAppActivity extends Activity implements OTAServerManager.OTAStat
 					public void run() {
 						onStateChangeUI(STATE_IN_CHECKED);
 						mMessageTextView.setText(getText(R.string.have_new));
-
-						String length = (String) getText(R.string.length_unknown);
-						
-						if (bytes > 0)
-							length = byteCountToDisplaySize(bytes, false);
-						mVersionTextView.setText(getText(R.string.version) +  ":" +
-								parser.getProp("ro.build.id") + "\n" +
-								getText(R.string.full_version) + ":" +
-								parser.getProp("ro.build.description") + "\n" +
-								getText(R.string.size) + " " + length);
+						String b_id = mOTAManager.getBuildId();
+						String b_date = mOTAManager.getBuildDate();
+						String b_desc = mOTAManager.getBuildDescription();
+						String length = mOTAManager.getBuildSize();
+						int buildBytes = Integer.parseInt(length);
+						if (buildBytes > 0) {
+							length = byteCountToDisplaySize(buildBytes, false);
+						}
+						mVersionTextView.setText(
+								getText(R.string.build_id) +  ": " +
+								b_id + "\n" +
+								getText(R.string.build_date) +  ": " +
+								b_date + "\n" +
+								getText(R.string.build_desc) + ": " +
+								b_desc + "\n" +
+								getText(R.string.size) + ": " + length);
 						mUpgradeButton.setVisibility(View.VISIBLE);
 					}
 				});
