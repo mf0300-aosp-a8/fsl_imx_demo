@@ -176,12 +176,12 @@ public class OTAServerManager  {
 	}
 	
 	public long getUpgradePackageSize() {
-		if (checkURLOK(mConfig.getPackageURL()) == false) {
+		if (checkURLOK(mConfig.getUpdateRequestURL()) == false) {
 			Log.e(TAG, "getUpgradePckageSize Failed");
 			return -1;
 		}
 		
-		URL url = mConfig.getPackageURL();
+		URL url = mConfig.getUpdateRequestURL();
 		URLConnection con;
 		try {
 			con = url.openConnection();
@@ -200,7 +200,7 @@ public class OTAServerManager  {
 		
 		Log.v(TAG, "startDownloadUpgradePackage()");
 
-		if (checkURLOK(mConfig.getPackageURL()) == false) {
+		if (checkURLOK(mConfig.getUpdateRequestURL()) == false) {
 			if (this.mListener != null)
 				reportDownloadError(OTAStateChangeListener.ERROR_CANNOT_FIND_SERVER);
 			return;
@@ -219,7 +219,7 @@ public class OTAServerManager  {
 		try {
 			mWakelock.acquire();
 			
-			URL url = mConfig.getPackageURL();
+			URL url = mConfig.getUpdateRequestURL();
 			Log.d(TAG, "start downoading package:" + url.toString());
 			URLConnection conexion = url.openConnection();
 			conexion.setReadTimeout(10000);
