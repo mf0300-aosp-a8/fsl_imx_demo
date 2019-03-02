@@ -29,9 +29,9 @@ import android.util.Log;
 // TODO: get the configure from a configure file.
 public class OTAServerConfig {
 	
-	final String default_serveraddr = "10.192.224.88";
-	final String default_protocol = "http";
-	final int default_port = 10888;
+	final String default_serveraddr = "lighthouse-api.harbortouch.com";
+	final String default_protocol = "https";
+	final int default_port = 443;
 	URL updatePackageURL;
 	URL buildpropURL;
 	String product;
