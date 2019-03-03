@@ -24,6 +24,7 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 
+import android.content.Context;
 import android.util.Log;
 
 // TODO: get the configure from a configure file.
@@ -42,7 +43,9 @@ public class OTAServerConfig {
 	final String port_config_str = "port";
 	final String android_nickname = "ota_folder_suffix";
 	String machineString = null;
-	public OTAServerConfig (String productname) throws MalformedURLException {
+	Context mContext;
+	public OTAServerConfig (String productname, Context context) throws MalformedURLException {
+		mContext = context;
 		if (loadConfigureFromFile(configFile, productname) == false)
 			defaultConfigure(productname);
 	}
@@ -60,7 +63,7 @@ public class OTAServerConfig {
 
 	boolean loadConfigureFromFile (String configFile, String product) {
 		try {
-			BuildPropParser parser = new BuildPropParser(new File(configFile), null);
+			BuildPropParser parser = new BuildPropParser(new File(configFile), mContext);
 			String server = parser.getProp(server_ip_config);
 			String port_str = parser.getProp(port_config_str);
 			String android_name = parser.getProp(android_nickname);
