@@ -44,6 +44,8 @@ public class OTAServerConfig {
 	final String android_nickname = "ota_folder_suffix";
 	String machineString = null;
 	Context mContext;
+	String mServerDomain = null;
+	int mServerPort = 0;
 	public OTAServerConfig (String productname, Context context) throws MalformedURLException {
 		mContext = context;
 		if (loadConfigureFromFile(configFile, productname) == false)
@@ -65,9 +67,14 @@ public class OTAServerConfig {
 		try {
 			BuildPropParser parser = new BuildPropParser(new File(configFile), mContext);
 			String server = parser.getProp(server_ip_config);
+			mServerDomain = server != null ? server : default_serveraddr;
 			String port_str = parser.getProp(port_config_str);
+			if (port_str == null) {
+				port_str = Integer.toString(default_port);
+			}
 			String android_name = parser.getProp(android_nickname);
 			int port = new Long(port_str).intValue();
+			mServerPort = port != 0 ? port : default_port;
 			String fileaddr;
 			String buildconfigAddr;
 
