@@ -46,6 +46,7 @@ public class OTAServerConfig {
 	Context mContext;
 	String mServerDomain = null;
 	int mServerPort = 0;
+	URL updateRequestURL;
 	public OTAServerConfig (String productname, Context context) throws MalformedURLException {
 		mContext = context;
 		if (loadConfigureFromFile(configFile, productname) == false)
@@ -117,6 +118,7 @@ public class OTAServerConfig {
 			}
 			updatePackageURL = new URL(default_protocol, server, port, fileaddr);
 			buildpropURL = new URL(default_protocol, server, port, buildconfigAddr);
+			updateRequestURL = new URL(default_protocol, mServerDomain, mServerPort, mContext.getString(R.string.ota_server_url));
 		} catch (Exception e) {
 			Log.e(TAG, "wrong format/error of OTA configure file.");
 			e.printStackTrace();
@@ -135,8 +137,16 @@ public class OTAServerConfig {
 		buildpropURL = new URL(default_protocol, default_serveraddr, default_port, buildconfigAddr);
 		Log.d(TAG, "create a new server config: package url " + updatePackageURL.toString() + "port:" + updatePackageURL.getPort());
 		Log.d(TAG, "build.prop URL:" + buildpropURL.toString());
+
+		String packageUpdateAddr = new String(product + "/api/v1/rom");
+		if (mServerDomain != null && mServerPort != 0) {
+			updateRequestURL = new URL(default_protocol, mServerDomain, mServerPort, packageUpdateAddr);
+		} else {
+			updateRequestURL = new URL(default_protocol, default_serveraddr, default_port, packageUpdateAddr);
+		}
 	}
 	
+	public URL getUpdateRequestURL() { return updateRequestURL; }
 	public URL getPackageURL () { return updatePackageURL; }
 	public URL getBuildPropURL() { return buildpropURL; }
 	
