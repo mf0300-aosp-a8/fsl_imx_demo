@@ -501,6 +501,9 @@ public class EthernetManager {
 	}
     }
     public boolean isEthernetConnect(){
-        return mConnMgr.getNetworkInfo(ConnectivityManager.TYPE_ETHERNET).isConnected();
+        if(mConnMgr.getActiveNetworkInfo() != null) {
+            return mConnMgr.getActiveNetworkInfo().getType() == ConnectivityManager.TYPE_ETHERNET;
+        }
+        return false;
     }
 }
