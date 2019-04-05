@@ -142,6 +142,8 @@ public class EthernetConfigDialog extends AlertDialog implements
             info.setConnectMode(EthernetDevInfo.ETHERNET_CONN_MODE_DHCP);
             info.setIpAddress(null);
             info.setDnsAddr(null);
+            info.setNetMask(null);
+            info.setGateway(null);
         }
 
         info.setProxyAddr(mEthEnabler.getManager().getSharedPreProxyAddress());

@@ -49,7 +49,6 @@ public class EthernetReceiver extends BroadcastReceiver {
                         connMgr.setGlobalProxy(null);
                     } else if (info.getState() == State.CONNECTED) {
                         EthernetManager ethManager = new EthernetManager(context);
-                        ethManager.resetInterface();
                         ethManager.initProxy();
                     }
                 }

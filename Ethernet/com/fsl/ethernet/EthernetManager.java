@@ -51,6 +51,13 @@ import android.net.IpConfiguration.*;
 import java.util.ArrayList;
 import java.net.Inet4Address;
 import java.lang.Integer;
+import java.io.OutputStream;
+import java.io.PrintStream;
+import java.io.InputStream;
+import java.io.BufferedReader;
+import android.net.LocalSocket;
+import android.net.LocalSocketAddress;
+import java.io.InputStreamReader;
 
 /**
  * Created by B38613 on 9/27/13.
@@ -200,6 +207,51 @@ public class EthernetManager {
 
     }
 
+    boolean ficTrap(String netmask) {
+       OutputStream os;
+       PrintStream ps;
+       boolean result = false;
+
+       InputStream in;
+       BufferedReader br;
+
+       try {
+           LocalSocket mSocket = new LocalSocket();
+           mSocket.connect(new LocalSocketAddress("serialnumber",
+                   LocalSocketAddress.Namespace.RESERVED));
+
+
+           os = mSocket.getOutputStream();
+           in = mSocket.getInputStream();
+
+           ps = new PrintStream(os);
+           String sernum = "cmd::netcmd::" + netmask;
+           byte[] msg1 = sernum.getBytes();
+           ps.write(msg1);
+
+           br = new BufferedReader(new InputStreamReader(in));
+
+           StringBuffer strBuffer = new StringBuffer();
+           char c = (char) br.read();
+           while (c != 0x00 && c != 0xffff) {
+               strBuffer.append(c);
+               c = (char) br.read();
+           }
+
+           result = true;
+           Log.i(TAG, "write netmask Ok");
+
+           ps.close();
+           os.close();
+           mSocket.close();
+       } catch (Exception e) {
+           e.printStackTrace();
+       }
+
+       return result;
+   }
+
+
     void configureInterface(EthernetDevInfo info) {
         if (info.getConnectMode().equals(EthernetDevInfo.ETHERNET_CONN_MODE_DHCP)) {
             IpConfiguration ipcfg = new IpConfiguration();
@@ -240,7 +292,10 @@ public class EthernetManager {
             Log.d(TAG, "set ip manually " + info.toString());
             SystemProperties.set("net.dns1", info.getDnsAddr());
             SystemProperties.set("net." + info.getIfName() + ".dns1",info.getDnsAddr());
+            SystemProperties.set("net." + info.getIfName() + ".dns2", "0.0.0.0");
             updateDevInfo(info);
+            ficTrap("ifconfig " + info.getIfName() + " netmask " + info.getNetMask());
+            ficTrap("route add default gw " + info.getGateway() + " dev " + info.getIfName());
         }
     }
 
