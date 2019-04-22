@@ -319,7 +319,7 @@ public class EthernetManager {
             for( InetAddress d : mConnMgr.getLinkProperties(ConnectivityManager.TYPE_ETHERNET).getDnsServers()) {
                 String temp = d.toString();
                 if (temp != null)
-                    dns = temp.substring(1, temp.length()-1);
+                    dns = temp.substring(1, temp.length());
                 break;
             }
         } catch (Exception err) {
