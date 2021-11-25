@@ -145,13 +145,13 @@ public class OTAServerManager  {
 			storage_type = SystemProperties.get("ro.boot.storage_type");
 		}
 		try {
-			LocalNumVersionLong = Long.parseLong(LocalNumVersion);
+			LocalNumVersionLong = Long.parseLong(parser.getDigitsOnly(LocalNumVersion));
 		} catch (Throwable t) {
 			t.printStackTrace();
 			LocalNumVersionLong = 0;
 		}
 		try {
-			RemoteNumVersionLong = Long.parseLong(parser.getNumRelease());
+			RemoteNumVersionLong = Long.parseLong(parser.getDigitsOnly(parser.getNumRelease()));
 		} catch (Throwable t) {
 			t.printStackTrace();
 			RemoteNumVersionLong = 0;

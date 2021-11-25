@@ -1,20 +1,21 @@
 
     <resources>
         <string name="upgrade">Upgrade</string>
-        <string name="version">Version</string>
+        <string name="build_id">Build ID</string>
+        <string name="build_date">Build date</string>
         <string name="check_for_upgrade">Checking Upgrade</string>
-        <string name="app_name">HARBORTOUCH OTA System Update</string>
+        <string name="app_name">Shift4 OTA System Update</string>
         <string name="error_package_verify_failed">package verify failed, incomplete package</string>
         <string name="download_upgrade_package">Downloading Upgrade Package</string>
         <string name="error_server_no_package">Error: server don\'t have upgrade package</string>
         <string name="error_write_file">Error: write file error</string>
         <string name="already_up_to_date">\nYour software is up to date</string>
-        <string name="have_new">Have a new release</string>
+        <string name="have_new">A new release is now available</string>
         <string name="error_package_install_failed">package install failed</string>
         <string name="error_needs_wifi">Error: needs wifi network.</string>
         <string name="error_cannot_connect_server">Error: Can not connect to server</string>
         <string name="size">Size </string>
         <string name="length_unknown">Unknown</string>
         <string name="verify_package">Verifying package</string>
-        <string name="full_version">Description</string>
+        <string name="description">Description</string>
     </resources>

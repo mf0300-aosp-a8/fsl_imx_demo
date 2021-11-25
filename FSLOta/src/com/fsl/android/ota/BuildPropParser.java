@@ -101,6 +101,10 @@ public class BuildPropParser {
     	else
     		return null;
     }
-
-
+    public String getDigitsOnly(String value)  {
+            if (value != null)
+                return value.replaceAll("[^0-9]","");
+            else
+                return null;
+        }
 }

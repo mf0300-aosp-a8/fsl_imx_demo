@@ -335,11 +335,17 @@ public class OtaAppActivity extends Activity implements OTAServerManager.OTAStat
 						
 						if (bytes > 0)
 							length = byteCountToDisplaySize(bytes, false);
-						mVersionTextView.setText(getText(R.string.version) +  ":" +
-								parser.getProp("ro.build.id") + "\n" +
-								getText(R.string.full_version) + ":" +
+						mVersionTextView.setText(
+								getText(R.string.build_id) +  ": " +
+								parser.getProp("ro.build.display.id") + "\n" +
+
+								getText(R.string.build_date) +  ": " +
+								parser.getProp("ro.build.date") + "\n" +
+
+								getText(R.string.description) + ": " +
 								parser.getProp("ro.build.description") + "\n" +
-								getText(R.string.size) + " " + length);
+
+								getText(R.string.size) + ": " + length);
 						mUpgradeButton.setVisibility(View.VISIBLE);
 					}
 				});
