@@ -42,7 +42,6 @@ public class OTAServerConfig {
 	private String machineFile = "/sys/devices/soc0/machine";
 	private String server_ip_config = "server";
 	private String port_config_str = "port";
-	private String android_nickname = "ota_folder_suffix";
 	private String machineString = null;
 	private String mServerDomain = null;
 	private int mServerPort = 0;
@@ -71,7 +70,8 @@ public class OTAServerConfig {
 			BuildPropParser parser = new BuildPropParser(new File(configFile), mContext);
 			mServerDomain = parser.getProp(server_ip_config);
 			String port_str = parser.getProp(port_config_str);
-			String android_name = parser.getProp(android_nickname);
+			Log.i(TAG, "Read server name from file:" + mServerDomain);
+			Log.i(TAG, "Read server port from file:" + port_str);
 
 			if (port_str == null) {
 				port_str = Integer.toString(default_port);
@@ -84,6 +84,8 @@ public class OTAServerConfig {
 			if (mServerPort == 0) {
 				mServerPort = default_port;
 			}
+			Log.i(TAG, "Result server name:" + mServerDomain);
+			Log.i(TAG, "Result server port:" + mServerPort);
 
 			readMachine();
 			String version = SystemProperties.get("ro.build.version.release");
