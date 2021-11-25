@@ -70,6 +70,7 @@ public class BuildPropParser {
 
     private void setFile(File file) throws IOException {
         try {
+            /*
             FileReader reader = new FileReader(file);
             BufferedReader in = new BufferedReader(reader);
             String string;
@@ -83,7 +84,14 @@ public class BuildPropParser {
                 }
             }
             in.close();
-        } catch (IOException e) {
+            */
+            String ota_server_ip = mContext.getString(R.string.ota_server_ip);
+            propHM.put("server", ota_server_ip);
+            String ota_server_port = mContext.getString(R.string.ota_server_port);
+            propHM.put("port", ota_server_port);
+            String ota_server_url = mContext.getString(R.string.ota_server_url);
+            propHM.put("server_url", ota_server_url);
+        } catch (Exception e) {
             e.printStackTrace();
             throw e;
         }

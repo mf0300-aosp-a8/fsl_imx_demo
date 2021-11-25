@@ -24,25 +24,31 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 
+import android.content.Context;
 import android.util.Log;
 
 // TODO: get the configure from a configure file.
 public class OTAServerConfig {
-	
-	final String default_serveraddr = "172.20.26.51";
-	final String default_protocol = "http";
-	final int default_port = 80;
+
+	private Context mContext;
+	private String default_serveraddr = "lighthouse-api.harbortouch.com";
+	private String default_protocol = "https";
+	private int default_port = 443;
 	URL updatePackageURL;
-	URL buildpropURL;
+	URL updateRequestURL;
 	String product;
 	final String TAG = "OTA";
-	final String configFile = "/system/etc/ota.conf";
-	final String machineFile = "/sys/devices/soc0/machine";
-	final String server_ip_config = "server";
-	final String port_config_str = "port";
-	final String android_nickname = "ota_folder_suffix";
-	String machineString = null;
-	public OTAServerConfig (String productname) throws MalformedURLException {
+	private String configFile = "/system/etc/ota.conf";
+	private String machineFile = "/sys/devices/soc0/machine";
+	private String server_ip_config = "server";
+	private String port_config_str = "port";
+	private String android_nickname = "ota_folder_suffix";
+	private String machineString = null;
+	private String mServerDomain = null;
+	private int mServerPort = 0;
+
+	public OTAServerConfig (String productname, Context context) throws MalformedURLException {
+		mContext = context;
 		if (loadConfigureFromFile(configFile, productname) == false)
 			defaultConfigure(productname);
 	}
@@ -55,84 +61,54 @@ public class OTAServerConfig {
 			reader.close();
 		} catch (IOException e) {
 			e.printStackTrace();
+			// FAKE NAME
+			machineString = "imx6dq";
 		}
 	}
 
 	boolean loadConfigureFromFile (String configFile, String product) {
 		try {
-			BuildPropParser parser = new BuildPropParser(new File(configFile), null);
-			String server = parser.getProp(server_ip_config);
+			BuildPropParser parser = new BuildPropParser(new File(configFile), mContext);
+			mServerDomain = parser.getProp(server_ip_config);
 			String port_str = parser.getProp(port_config_str);
 			String android_name = parser.getProp(android_nickname);
-			int port = new Long(port_str).intValue();
-			String fileaddr;
-			String buildconfigAddr;
+
+			if (port_str == null) {
+				port_str = Integer.toString(default_port);
+			}
+
+			if (mServerDomain == null) {
+				mServerDomain = default_serveraddr;
+			}
+			mServerPort = new Long(port_str).intValue();
+			if (mServerPort == 0) {
+				mServerPort = default_port;
+			}
 
 			readMachine();
 			String version = SystemProperties.get("ro.build.version.release");
-			fileaddr = new String(product + "_" + android_name + "_" + version + "/" + product + ".ota.zip");
-			buildconfigAddr = new String(product + "_" + android_name + "_" + version + "/" + "build.prop");
-                        String boottype = SystemProperties.get("ro.boot.storage_type");
-			if (machineString.indexOf("i.MX6") != -1) {
-			if (machineString.indexOf("DualLite") != -1) {
-                               if (boottype.equals("sd"))
-                                  {fileaddr = fileaddr + ".imx6dl_sd";}
-                              else if (boottype.equals("nand"))
-                                  {fileaddr = fileaddr + ".imx6dl_nand";}
-                              else
-                              fileaddr = fileaddr + ".imx6dl";
-			} else if (machineString.indexOf("Quad") != -1) {
-				if(machineString.indexOf("Plus") != -1){
-                               		if (boottype.equals("sd"))
-                                  		{fileaddr = fileaddr + ".imx6qp_sd";}
-                              		else if (boottype.equals("nand"))
-                                  		{fileaddr = fileaddr + ".imx6qp_nand";}
-                              		else
-                              	  		fileaddr = fileaddr + ".imx6qp";
-				} else {
-					if (boottype.equals("sd"))
-                                  		{fileaddr = fileaddr + ".imx6q_sd";}
-                                	else if (boottype.equals("nand"))
-                                  		{fileaddr = fileaddr + ".imx6q_nand";}
-                                	else
-                                  		fileaddr = fileaddr + ".imx6q";
-				}
-			} else if (machineString.indexOf("SoloLite") != -1) {
-				fileaddr = fileaddr + ".imx6sl";
-			} else if (machineString.indexOf("SoloX") != -1) {
-                               if (boottype.equals("nand"))
-                                  {fileaddr = fileaddr + ".imx6sx_nand";
-                        }
-                              else
-			      fileaddr = fileaddr + ".imx6sx";
-			}
-			} else if (machineString.indexOf("i.MX7") != -1) {
-			      fileaddr = fileaddr + ".imx7d";	
-			}
-			updatePackageURL = new URL(default_protocol, server, port, fileaddr);
-			buildpropURL = new URL(default_protocol, server, port, buildconfigAddr);
+
+			updateRequestURL = new URL(default_protocol, mServerDomain, mServerPort, mContext.getString(R.string.ota_server_url));
 		} catch (Exception e) {
-			Log.e(TAG, "Wrong format/error of OTA configure file.");
 			e.printStackTrace();
 			return false;
 		}
-		
 		return true;
 	}
 	
 	void defaultConfigure(String productname) throws MalformedURLException
 	{
 		product = productname;
-		String fileaddr = new String(product + "/" + product + ".ota.zip");
-		String buildconfigAddr = new String(product + "/" + "build.prop"); 
-		updatePackageURL = new URL(default_protocol, default_serveraddr, default_port, fileaddr );
-		buildpropURL = new URL(default_protocol, default_serveraddr, default_port, buildconfigAddr);
-		Log.i(TAG, "Create a new server config: package url " + updatePackageURL.toString() +
-				" port:" + updatePackageURL.getPort());
-		Log.i(TAG, "Default build.prop URL:" + buildpropURL.toString());
+		String buildconfigAddr = new String(product + "/api/v1/update");
+		if (mServerDomain != null) {
+			updateRequestURL = new URL(default_protocol, mServerDomain, default_port, buildconfigAddr);
+		} else {
+			updateRequestURL = new URL(default_protocol, default_serveraddr, default_port, buildconfigAddr);
+		}
+		Log.i(TAG, "Default update check URL is :" + updateRequestURL.toString());
 	}
 	
 	public URL getPackageURL () { return updatePackageURL; }
-	public URL getBuildPropURL() { return buildpropURL; }
+	public URL getUpdateRequestURL() { return updateRequestURL; }
 	
 }

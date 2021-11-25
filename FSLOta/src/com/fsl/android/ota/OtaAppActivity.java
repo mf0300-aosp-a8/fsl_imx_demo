@@ -15,6 +15,9 @@
  */
 
 package com.fsl.android.ota;
+
+import android.os.SystemProperties;
+
 import java.net.MalformedURLException;
 import android.annotation.SuppressLint;
 import android.app.Activity;
@@ -23,7 +26,6 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
-import com.fsl.android.ota.R;
 import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -39,6 +41,8 @@ public class OtaAppActivity extends Activity implements OTAServerManager.OTAStat
 	private final int WIFI_NOT_AVALIBLE = 4;
 	private final int CANNOT_FIND_SERVER = 5;
 	private final int WRITE_FILE_ERROR = 6;
+	private final int SERIAL_NO_ERROR = 8;
+
 	Button mUpgradeButton;
 	TextView mMessageTextView;
 	TextView mVersionTextView;
@@ -48,10 +52,11 @@ public class OtaAppActivity extends Activity implements OTAServerManager.OTAStat
 	Context mContext; 
 	
 	OTAServerManager mOTAManager;
+
 	int mState = 0;
 	private Handler mHandler = new MainHandler();	
+
 	/* state change will be 0 -> Checked -> Downloading -> upgrading.  */
-	
 	final String TAG = "OTA";
 	
 	@SuppressLint("HandlerLeak")
@@ -79,10 +84,13 @@ public class OtaAppActivity extends Activity implements OTAServerManager.OTAStat
                 	break;
                 case CANNOT_FIND_SERVER:
                 	mMessageTextView.setText(getText(R.string.error_cannot_connect_server));
-			break;
+					break;
                 case WRITE_FILE_ERROR:
                 	mMessageTextView.setText(getText(R.string.error_write_file));
-			break;
+					break;
+				case SERIAL_NO_ERROR:
+					mMessageTextView.setText(getText(R.string.error_serial_no));
+					break;
                 default:
                 break;
             }
@@ -129,8 +137,8 @@ public class OtaAppActivity extends Activity implements OTAServerManager.OTAStat
     @Override
     public void onStart() {
     	super.onStart();
-    	
-    	Log.d(TAG, "OTAAppActivity : onStart");
+
+    	Log.d(TAG, "onStart was called");
     	// default state is checking, if resume from any pervious state,
     	// resume the state
     	onStateChangeUI(mState);
@@ -146,7 +154,7 @@ public class OtaAppActivity extends Activity implements OTAServerManager.OTAStat
     @Override
     public void onRestart() {
     	super.onRestart();
-    	Log.d(TAG, "OTAAppActivity : onRestart");
+    	Log.d(TAG, "onRestart was called");
     }
     
     
@@ -180,7 +188,7 @@ public class OtaAppActivity extends Activity implements OTAServerManager.OTAStat
 	
 	public void onStateOrProgress(int message, int error, Object info)
 	{
-            Log.v(TAG, "onStateOrProgress: " + "message: " + message + " error:" + error + " info: " + info );
+        Log.v(TAG, "onStateOrProgress: " + "message: " + message + " error:" + error + " info: " + info );
 	    switch (message) {
 	        case STATE_IN_CHECKED:
 				onStateChangeUI(message);
@@ -209,20 +217,19 @@ public class OtaAppActivity extends Activity implements OTAServerManager.OTAStat
 	// other will control the model(download). 
 	void onStateChangeUI(int newstate)
 	{
-        	mState = newstate;
+        mState = newstate;
 		if (newstate == STATE_IN_IDLE) {
-	       		mHandler.sendEmptyMessageDelayed(IDLE,0);
+	    	mHandler.sendEmptyMessageDelayed(IDLE,0);
 		}else if (newstate == STATE_IN_CHECKED) {
-                	mHandler.sendEmptyMessageDelayed(CHECKED,0);
+            mHandler.sendEmptyMessageDelayed(CHECKED,0);
 		}else if (newstate == STATE_IN_DOWNLOADING) {
-	               // from start download, it start hide the version again.
+	        // from start download, it start hide the version again.
 			mHandler.sendEmptyMessageDelayed(DOWNLOADING,0);
 		} 
 	}
 	
 	void onStateUpgrade(int error, Object info) {
-		
-		if (error == ERROR_PACKAGE_VERIFY_FAILED) {
+		if (error == ERROR_PACKAGE_SIGN_FAILED) {
 			Log.v(TAG, "package verify failed, signaure not match");
 			mMessageTextView.post(new Runnable() {
 				public void run() {
@@ -237,6 +244,12 @@ public class OtaAppActivity extends Activity implements OTAServerManager.OTAStat
 					mMessageTextView.setText(getText(R.string.error_package_install_failed));
 				}
 			});
+		} else if (error == ERROR_PACKAGE_VERIFY_FALIED) {
+			mMessageTextView.post(new Runnable() {
+				public void run() {
+					mMessageTextView.setText(getText(R.string.error_package_verify_failed));
+				}
+			});
 		}
 	}
 	
@@ -247,7 +260,6 @@ public class OtaAppActivity extends Activity implements OTAServerManager.OTAStat
 				mDownloadProgress.setProgress(progress.intValue());
 			}
 		});
-		
 		Log.v(TAG, "progress : " + progress);
 		if (message == MESSAGE_DOWNLOAD_PROGRESS) {
 			onStateChangeUI(STATE_IN_DOWNLOADING);
@@ -287,7 +299,6 @@ public class OtaAppActivity extends Activity implements OTAServerManager.OTAStat
 			});
 			onStateChangeUI(STATE_IN_CHECKED);
 		}
-		
 		if (error == 0) {
 			// success download, let try to start with install package...
 			// we should already in another thread, no needs to create a thread.
@@ -309,11 +320,11 @@ public class OtaAppActivity extends Activity implements OTAServerManager.OTAStat
 				mSpinner.setVisibility(View.INVISIBLE);
 			}
 		});
-		
+
 		if (error == 0) {
 			// return no error, usually means have a version info from remote server, release name is in @info
 			// needs check here whether the local version is newer then remote version
-			if (mOTAManager.compareLocalVersionToServer() == false) {
+			if (mOTAManager.isUpdateURLPresent() == false) {
 				// we are already latest...				
 				mMessageTextView.post(new Runnable() {
 					public void run() {
@@ -322,28 +333,30 @@ public class OtaAppActivity extends Activity implements OTAServerManager.OTAStat
 						mVersionTextView.setVisibility(View.INVISIBLE);
 					}
 				});
-				
-			} else if (mOTAManager.compareLocalVersionToServer() == true ) {
+			} else {
 				final BuildPropParser parser = (BuildPropParser) info;
-				final long bytes = mOTAManager.getUpgradePackageSize();
+				//final long bytes = mOTAManager.getUpgradePackageSize();
 				mMessageTextView.post(new Runnable() {
 					public void run() {
 						onStateChangeUI(STATE_IN_CHECKED);
 						mMessageTextView.setText(getText(R.string.have_new));
-
-						String length = (String) getText(R.string.length_unknown);
-						
-						if (bytes > 0)
+						String b_id = mOTAManager.getBuildId();
+						String b_date = mOTAManager.getBuildDate();
+						String b_desc = mOTAManager.getBuildDescription();
+						String length = mOTAManager.getBuildSize();
+						int bytes = Integer.parseInt(length);
+						if (bytes > 0) {
 							length = byteCountToDisplaySize(bytes, false);
+						}
 						mVersionTextView.setText(
 								getText(R.string.build_id) +  ": " +
-								parser.getProp("ro.build.display.id") + "\n" +
+								b_id + "\n" +
 
 								getText(R.string.build_date) +  ": " +
-								parser.getProp("ro.build.date") + "\n" +
+								b_date + "\n" +
 
 								getText(R.string.description) + ": " +
-								parser.getProp("ro.build.description") + "\n" +
+								b_desc + "\n" +
 
 								getText(R.string.size) + ": " + length);
 						mUpgradeButton.setVisibility(View.VISIBLE);
@@ -356,6 +369,8 @@ public class OtaAppActivity extends Activity implements OTAServerManager.OTAStat
 			mHandler.sendEmptyMessageDelayed(CANNOT_FIND_SERVER,0);
 		} else if (error == ERROR_WRITE_FILE_ERROR ) {
 			mHandler.sendEmptyMessageDelayed(WRITE_FILE_ERROR,0);
+		} else if (error == ERROR_SERIAL_NOT_AVALIBLE ) {
+			mHandler.sendEmptyMessageDelayed(SERIAL_NO_ERROR,0);
 		}
 	}
 	

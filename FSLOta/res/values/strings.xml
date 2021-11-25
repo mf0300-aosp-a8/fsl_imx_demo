@@ -9,6 +9,7 @@
         <string name="download_upgrade_package">Downloading Upgrade Package</string>
         <string name="error_server_no_package">Error: server don\'t have upgrade package</string>
         <string name="error_write_file">Error: write file error</string>
+        <string name="error_serial_no">Invalid serial number</string>
         <string name="already_up_to_date">\nYour software is up to date</string>
         <string name="have_new">A new release is now available</string>
         <string name="error_package_install_failed">package install failed</string>
@@ -18,4 +19,10 @@
         <string name="length_unknown">Unknown</string>
         <string name="verify_package">Verifying package</string>
         <string name="description">Description</string>
+        <string name="action_settings">Settings</string>
+        <string name="ota_server_ip">lighthouse-api.harbortouch.com</string>
+        <string name="ota_server_port">443</string>
+        <string name="ota_server_url">/api/v1/rom</string>
+        <string name="ota_client_machine">/sys/devices/soc0/machine</string>
+        <string name="ota_client_config">/system/etc/ota.conf</string>
     </resources>
