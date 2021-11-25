@@ -27,6 +27,7 @@ import com.fsl.android.ota.R;
 import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
+import android.view.Window;
 import android.widget.*;
 
 // Controller of OTA Activity
@@ -53,28 +54,28 @@ public class OtaAppActivity extends Activity implements OTAServerManager.OTAStat
 	
 	final String TAG = "OTA";
 	
-        @SuppressLint("HandlerLeak")
+	@SuppressLint("HandlerLeak")
 	private class MainHandler extends Handler {
             @Override
             public void handleMessage(Message msg) {
             switch (msg.what) {
                 case IDLE:
-                    	mVersionTextView.setVisibility(View.INVISIBLE);
-                    	mDownloadProgress.setVisibility(View.INVISIBLE);
-                    	mUpgradeButton.setVisibility(View.INVISIBLE); 
-                    	break;
+					mVersionTextView.setVisibility(View.INVISIBLE);
+					mDownloadProgress.setVisibility(View.INVISIBLE);
+					mUpgradeButton.setVisibility(View.INVISIBLE);
+					break;
                 case CHECKED:
-                    	mVersionTextView.setVisibility(View.VISIBLE);
-                    	mSpinner.setVisibility(View.INVISIBLE);
-                    	break;
+					mVersionTextView.setVisibility(View.VISIBLE);
+					mSpinner.setVisibility(View.INVISIBLE);
+					break;
                 case DOWNLOADING:
-                      	mVersionTextView.setVisibility(View.INVISIBLE);
-                    	mUpgradeButton.setVisibility(View.INVISIBLE);
-                    	mSpinner.setVisibility(View.INVISIBLE);
-                    	mDownloadProgress.setVisibility(View.VISIBLE);
-                    	break;
+					mVersionTextView.setVisibility(View.INVISIBLE);
+					mUpgradeButton.setVisibility(View.INVISIBLE);
+					mSpinner.setVisibility(View.INVISIBLE);
+					mDownloadProgress.setVisibility(View.VISIBLE);
+					break;
                 case WIFI_NOT_AVALIBLE:
-			mMessageTextView.setText(getText(R.string.error_needs_wifi));
+					mMessageTextView.setText(getText(R.string.error_needs_wifi));
                 	break;
                 case CANNOT_FIND_SERVER:
                 	mMessageTextView.setText(getText(R.string.error_cannot_connect_server));
@@ -94,15 +95,28 @@ public class OtaAppActivity extends Activity implements OTAServerManager.OTAStat
         super.onCreate(savedInstanceState);
         
         Log.d(TAG, "OTAAppActivity : onCreate");
+        try {
+            requestWindowFeature(Window.FEATURE_LEFT_ICON);
+        } catch(Throwable t) {
+            t.printStackTrace();
+        }
+
         setContentView(R.layout.main);
-        (mUpgradeButton = (Button) findViewById(R.id.upgrade_button)) 
-        		.setOnClickListener(mUpgradeListener);
+
+        try {
+
+            setFeatureDrawableResource(Window.FEATURE_LEFT_ICON, R.drawable.ic_launcher);
+        } catch(Throwable t) {
+            t.printStackTrace();
+        }
+
+        (mUpgradeButton = (Button) findViewById(R.id.upgrade_button)).setOnClickListener(mUpgradeListener);
         mMessageTextView = (TextView) findViewById(R.id.message_text_view);
         mVersionTextView = ((TextView) findViewById(R.id.version_text_view)); 
         mSpinner = (ProgressBar) findViewById(R.id.spinner);
         mDownloadProgress = (ProgressBar) findViewById(R.id.download_progress_bar);
         mContext = getBaseContext();
-	try {
+		try {
 	        mOTAManager = new OTAServerManager(mContext);
 		} catch (MalformedURLException e) {
 			mOTAManager = null;
@@ -169,24 +183,24 @@ public class OtaAppActivity extends Activity implements OTAServerManager.OTAStat
             Log.v(TAG, "onStateOrProgress: " + "message: " + message + " error:" + error + " info: " + info );
 	    switch (message) {
 	        case STATE_IN_CHECKED:
-                        onStateChangeUI(message);
-                        mState = STATE_IN_CHECKED;
-                        onStateInChecked(error, info);
-                        break;
-		case STATE_IN_DOWNLOADING:
-			onStateChangeUI(message);
-			mState = STATE_IN_DOWNLOADING;
-			onStateDownload(error, info);
-			break;
-		case STATE_IN_UPGRADING:
-			onStateChangeUI(message);
-			mState = STATE_IN_UPGRADING;
-			onStateUpgrade(error, info);
-			break;
-		case MESSAGE_DOWNLOAD_PROGRESS:
-		case MESSAGE_VERIFY_PROGRESS:
-			onProgress(message, error, info);
-			break;
+				onStateChangeUI(message);
+				mState = STATE_IN_CHECKED;
+				onStateInChecked(error, info);
+				break;
+			case STATE_IN_DOWNLOADING:
+				onStateChangeUI(message);
+				mState = STATE_IN_DOWNLOADING;
+				onStateDownload(error, info);
+				break;
+			case STATE_IN_UPGRADING:
+				onStateChangeUI(message);
+				mState = STATE_IN_UPGRADING;
+				onStateUpgrade(error, info);
+				break;
+			case MESSAGE_DOWNLOAD_PROGRESS:
+			case MESSAGE_VERIFY_PROGRESS:
+				onProgress(message, error, info);
+				break;
 		}
 	}
 
@@ -303,7 +317,8 @@ public class OtaAppActivity extends Activity implements OTAServerManager.OTAStat
 				// we are already latest...				
 				mMessageTextView.post(new Runnable() {
 					public void run() {
-						mMessageTextView.setText(Build.VERSION.RELEASE + ", " + Build.ID + "\n" +  getText(R.string.already_up_to_date));
+						mMessageTextView.setText(Build.VERSION.RELEASE + ", " + Build.ID + "\n" +
+								getText(R.string.already_up_to_date));
 						mVersionTextView.setVisibility(View.INVISIBLE);
 					}
 				});

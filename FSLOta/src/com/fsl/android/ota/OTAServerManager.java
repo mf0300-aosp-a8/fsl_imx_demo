@@ -77,6 +77,7 @@ public class OTAServerManager  {
 		PowerManager pm = (PowerManager)context.getSystemService(Context.POWER_SERVICE);
 		mWakelock = pm.newWakeLock(PowerManager.SCREEN_BRIGHT_WAKE_LOCK, "OTA Wakelock");
 		mContext = context;
+		Log.i(TAG, "OTAServerManager: PRODUCT:" + Build.PRODUCT);
 	}
 
 	public OTAStateChangeListener getmListener() {
@@ -133,16 +134,36 @@ public class OTAServerManager  {
 			Log.d(TAG, "compareLocalVersion Without fetch remote prop list.");
 			return false;
 		}
-		String localNumVersion = Build.VERSION.INCREMENTAL;
-		Long buildutc = Build.TIME;
-		Long remoteBuildUTC = (Long.parseLong(parser.getProp("ro.build.date.utc"))) * 1000;
+		String LocalNumVersion = Build.VERSION.INCREMENTAL;
+		String storage_type = "internal";
+		long LocalNumVersionLong = 0;
+		long RemoteNumVersionLong = 0;
+		long buildutc = Build.TIME;
+		long remoteBuildUTC = (Long.parseLong(parser.getProp("ro.build.date.utc"))) * 1000;
 		// *1000 because Build.java also *1000, align with it.
-		Log.d(TAG, "Local Version:" + Build.VERSION.INCREMENTAL + "server Version:" + parser.getNumRelease());
-                 Log.d(TAG, "BOARD BOOTTYPE:" + SystemProperties.get("ro.boot.storage_type"));
+		if (SystemProperties.get("ro.boot.storage_type") != null) {
+			storage_type = SystemProperties.get("ro.boot.storage_type");
+		}
+		try {
+			LocalNumVersionLong = Long.parseLong(LocalNumVersion);
+		} catch (Throwable t) {
+			t.printStackTrace();
+			LocalNumVersionLong = 0;
+		}
+		try {
+			RemoteNumVersionLong = Long.parseLong(parser.getNumRelease());
+		} catch (Throwable t) {
+			t.printStackTrace();
+			RemoteNumVersionLong = 0;
+		}
+		Log.i(TAG, "Local Version:" + LocalNumVersion +
+				" Server Version:" + parser.getNumRelease() + 
+				" BOARD BOOT:" + storage_type);
 		boolean upgrade = false;
-		upgrade = remoteBuildUTC > buildutc;
-		// here only check build time, in your case, you may also check build id, etc.
-		Log.d(TAG, "remote BUILD TIME: " + remoteBuildUTC + " local build rtc:" + buildutc);
+		if (LocalNumVersionLong < RemoteNumVersionLong) upgrade = true;
+		//upgrade = remoteBuildUTC > buildutc;
+		Log.i(TAG, "Remote BUILD TIME: " + remoteBuildUTC + " Local build rtc:" + buildutc);
+		Log.i(TAG, "Upgrade needed: " + upgrade);
 		return upgrade;
 	}
 	
@@ -176,8 +197,9 @@ public class OTAServerManager  {
 	}
 	
 	public long getUpgradePackageSize() {
-		if (checkURLOK(mConfig.getPackageURL()) == false) {
-			Log.e(TAG, "getUpgradePckageSize Failed");
+		URL update_package_url = mConfig.getPackageURL();
+		if (checkURLOK(update_package_url) == false) {
+			Log.e(TAG, "getUpgradePckageSize Failed for " + update_package_url.toString());
 			return -1;
 		}
 		
@@ -307,11 +329,8 @@ public class OTAServerManager  {
 	boolean checkURLOK(URL url) {
 		try {
 			HttpURLConnection.setFollowRedirects(false);
-			
 			HttpURLConnection con =  (HttpURLConnection) url.openConnection();
-			
 			con.setRequestMethod("HEAD");
-			
 			return (con.getResponseCode() == HttpURLConnection.HTTP_OK);
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -324,7 +343,6 @@ public class OTAServerManager  {
 	// download the property list from remote site, and parse it to peroerty list.
 	// the caller can parser this list and get information.
 	BuildPropParser getTargetPackagePropertyList(URL configURL) {
-		
 		// first try to download the property list file. the build.prop of target image.
 		try {
 			URL url =  configURL;
@@ -335,22 +353,16 @@ public class OTAServerManager  {
 			int totalBufRead = 0;
 			int bytesRead;
 			
-			Log.d(TAG, "start download: " + url.toString() + "to buffer");
-		
+			Log.d(TAG, "start download: " + url.toString() + " to buffer");
 			while ((bytesRead = reader.read(buffer)) > 0) {
 				writer.write(buffer, 0, bytesRead);
 				buffer = new byte[153600];
 				totalBufRead += bytesRead;
 			}
-			
-		
-		Log.d(TAG, "download finish:" + (new Integer(totalBufRead).toString()) + "bytes download");
-		reader.close();
-		
-		BuildPropParser parser = new BuildPropParser(writer, mContext);
-		
-		return parser;
-		
+			Log.d(TAG, "download finish:" + (new Integer(totalBufRead).toString()) + " bytes downloaded");
+			reader.close();
+			BuildPropParser parser = new BuildPropParser(writer, mContext);
+			return parser;
 		} catch (IOException e) {
 			e.printStackTrace();
 			return null;

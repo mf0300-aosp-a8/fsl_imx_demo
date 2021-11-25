@@ -29,9 +29,9 @@ import android.util.Log;
 // TODO: get the configure from a configure file.
 public class OTAServerConfig {
 	
-	final String default_serveraddr = "10.192.224.88";
+	final String default_serveraddr = "172.20.26.51";
 	final String default_protocol = "http";
-	final int default_port = 10888;
+	final int default_port = 80;
 	URL updatePackageURL;
 	URL buildpropURL;
 	String product;
@@ -112,7 +112,7 @@ public class OTAServerConfig {
 			updatePackageURL = new URL(default_protocol, server, port, fileaddr);
 			buildpropURL = new URL(default_protocol, server, port, buildconfigAddr);
 		} catch (Exception e) {
-			Log.e(TAG, "wrong format/error of OTA configure file.");
+			Log.e(TAG, "Wrong format/error of OTA configure file.");
 			e.printStackTrace();
 			return false;
 		}
@@ -127,8 +127,9 @@ public class OTAServerConfig {
 		String buildconfigAddr = new String(product + "/" + "build.prop"); 
 		updatePackageURL = new URL(default_protocol, default_serveraddr, default_port, fileaddr );
 		buildpropURL = new URL(default_protocol, default_serveraddr, default_port, buildconfigAddr);
-		Log.d(TAG, "create a new server config: package url " + updatePackageURL.toString() + "port:" + updatePackageURL.getPort());
-		Log.d(TAG, "build.prop URL:" + buildpropURL.toString());
+		Log.i(TAG, "Create a new server config: package url " + updatePackageURL.toString() +
+				" port:" + updatePackageURL.getPort());
+		Log.i(TAG, "Default build.prop URL:" + buildpropURL.toString());
 	}
 	
 	public URL getPackageURL () { return updatePackageURL; }

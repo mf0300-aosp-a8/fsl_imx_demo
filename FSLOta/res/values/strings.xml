@@ -3,7 +3,7 @@
         <string name="upgrade">Upgrade</string>
         <string name="version">Version</string>
         <string name="check_for_upgrade">Checking Upgrade</string>
-        <string name="app_name">Freescale OTA System Update</string>
+        <string name="app_name">HARBORTOUCH OTA System Update</string>
         <string name="error_package_verify_failed">package verify failed, incomplete package</string>
         <string name="download_upgrade_package">Downloading Upgrade Package</string>
         <string name="error_server_no_package">Error: server don\'t have upgrade package</string>
