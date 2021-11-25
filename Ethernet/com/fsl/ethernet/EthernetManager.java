@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.Iterator;
 import android.annotation.SdkConstant;
 import android.annotation.SdkConstant.SdkConstantType;
-import android.os.Handler;
 import android.os.RemoteException;
 import android.util.Log;
 import android.content.Context;
@@ -39,8 +38,6 @@ import android.net.NetworkInfo.DetailedState;
 import android.net.LinkProperties;
 import android.net.InterfaceConfiguration;
 import android.net.ProxyInfo;
-import android.os.HandlerThread;
-import android.os.Looper;
 import android.os.Message;
 import android.os.Parcel;
 import android.os.SystemProperties;
@@ -140,9 +137,6 @@ public class EthernetManager {
             Log.e(TAG, "Could not get list of interfaces " + e);
         }
 
-
-        HandlerThread dhcpThread = new HandlerThread("DHCP Handler Thread");
-        dhcpThread.start();
         mDhcpInfo = new DhcpInfo();
     }
 
